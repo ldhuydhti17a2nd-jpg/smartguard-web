@@ -107,6 +107,14 @@
 
         .btn-blue:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(26, 115, 232, 0.4); }
 
+        /* SỬA NÚT MAP BỊ LỆCH TẠI ĐÂY */
+        #mapLink {
+            margin-top: 15px; /* Tạo khoảng cách với nút phía trên */
+            text-decoration: none;
+            text-align: center;
+            display: block;
+        }
+
         .forgot-btn {
             background: none; border: none; color: var(--primary-blue); 
             cursor: pointer; width: 100%; margin-top: 15px; 
@@ -123,7 +131,6 @@
             margin-bottom: 20px;
         }
 
-        /* Hiệu ứng loading */
         .loading-spinner {
             display: none;
             text-align: center;
@@ -175,7 +182,7 @@
         <input type="password" id="newPass" placeholder="Bỏ trống nếu không đổi">
 
         <button class="btn btn-red" onclick="handleUpdate()">CẬP NHẬT THÔNG TIN</button>
-        <a id="mapLink" href="#" target="_blank" class="btn btn-blue" style="text-decoration:none; text-align:center; display:block;">
+        <a id="mapLink" href="#" target="_blank" class="btn btn-blue">
             XEM VỊ TRÍ HIỆN TẠI
         </a>
     </div>
@@ -186,10 +193,7 @@
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
 
-
-
 <script>
-    // CẤU HÌNH FIREBASE
     const firebaseConfig = { databaseURL: "https://smartguard-25e26-default-rtdb.asia-southeast1.firebasedatabase.app/" };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
@@ -232,14 +236,13 @@
     function verifyOTP() {
         if(document.getElementById('otpInput').value === currentOTP) {
             if(flowType === "REGISTER") {
-                // TẠO MỚI TRÊN FIREBASE NGAY KHI XÁC THỰC XONG
                 const id = document.getElementById('regId').value.trim();
                 const initialData = {
                     child_name: "Bé mới",
                     parent_email: tempEmail,
-                    password: "123", // Mật khẩu mặc định cho lần đầu
+                    password: "123",
                     sos: 0,
-                    vi_do: 21.0123, // Tọa độ giả lập ban đầu
+                    vi_do: 21.0123,
                     kinh_do: 105.8123
                 };
                 db.ref('SmartGuard/' + id).set(initialData).then(() => {
@@ -259,10 +262,11 @@
         document.getElementById('regName').value = data.child_name || "";
         document.getElementById('regEmail').value = data.parent_email || "";
         
-        // SỬA LỖI TẠI ĐÂY: Dùng cú pháp ${data.ten_bien}
+        // SỬA LỖI TỌA ĐỘ UNDEFINED TẠI ĐÂY
         if (data.vi_do && data.kinh_do) {
             document.getElementById('mapLink').href = `https://www.google.com/maps?q=${data.vi_do},${data.kinh_do}`;
             document.getElementById('mapLink').innerText = "XEM VỊ TRÍ HIỆN TẠI";
+            document.getElementById('mapLink').style.display = "block";
         } else {
             document.getElementById('mapLink').href = "#";
             document.getElementById('mapLink').innerText = "CHƯA CÓ TỌA ĐỘ";
@@ -301,6 +305,5 @@
         document.getElementById('loading').style.display = show ? 'block' : 'none';
     }
 </script>
-
 </body>
 </html>
