@@ -8,44 +8,58 @@
     <style>
         :root { --red: #d32f2f; --blue: #1a73e8; --orange: #ef6c00; --bg: #f4f7f6; }
         body { font-family: 'Inter', sans-serif; background: var(--bg); display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
-        .card { background: #fff; padding: 30px; border-radius: 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.1); max-width: 420px; width: 90%; transition: all 0.5s; }
+        .card { background: #fff; padding: 30px; border-radius: 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.1); max-width: 420px; width: 90%; box-sizing: border-box; }
         .header-logo { text-align: center; margin-bottom: 25px; }
-        .header-logo h2 { color: var(--red); margin: 0; }
-        input { width: 100%; padding: 14px; margin-top: 8px; border: 2px solid #edf2f7; border-radius: 12px; box-sizing: border-box; }
-        .btn { width: 100%; padding: 16px; margin-top: 15px; border: none; border-radius: 12px; font-weight: 700; cursor: pointer; color: #fff; display: block; text-align: center; text-decoration: none; text-transform: uppercase; }
+        .header-logo h2 { color: var(--red); margin: 0; font-weight: 800; }
+        
+        label { font-weight: 600; display: block; margin-top: 15px; font-size: 14px; color: #555; }
+        input { width: 100%; padding: 14px; margin-top: 8px; border: 2px solid #edf2f7; border-radius: 12px; box-sizing: border-box; font-size: 16px; }
+
+        /* --- FIX NÚT BẰNG NHAU --- */
+        .btn-group { display: flex; flex-direction: column; gap: 12px; margin-top: 20px; }
+        .btn { 
+            width: 100%; padding: 16px 0; border: none; border-radius: 12px; 
+            font-weight: 700; font-size: 15px; cursor: pointer; color: #fff; 
+            display: flex; align-items: center; justify-content: center;
+            text-align: center; text-decoration: none; text-transform: uppercase;
+            box-sizing: border-box; transition: all 0.3s ease;
+        }
         .btn-red { background: linear-gradient(135deg, #ff5252, #d32f2f); }
         .btn-blue { background: linear-gradient(135deg, #42a5f5, #1a73e8); }
+        .btn:hover { transform: translateY(-2px); filter: brightness(1.1); }
+
         .hidden { display: none; }
         .info-box { background: #f8fafc; padding: 15px; border-radius: 12px; border: 1px dashed #cbd5e0; margin-bottom: 10px; }
         
-        /* Hiệu ứng nháy khi SOS */
-        .sos-1 { border: 3px solid var(--orange); animation: pulse-orange 1s infinite; }
-        .sos-2 { border: 3px solid var(--red); animation: pulse-red 1s infinite; }
-        @keyframes pulse-red { 0% { box-shadow: 0 0 0 0px rgba(211, 47, 47, 0.4); } 70% { box-shadow: 0 0 0 15px rgba(211, 47, 47, 0); } }
-        @keyframes pulse-orange { 0% { box-shadow: 0 0 0 0px rgba(239, 108, 0, 0.4); } 70% { box-shadow: 0 0 0 15px rgba(239, 108, 0, 0); } }
-        
+        /* Hiệu ứng SOS */
+        .sos-1 { border: 3px solid var(--orange); animation: p-orange 1s infinite; }
+        .sos-2 { border: 3px solid var(--red); animation: p-red 1s infinite; }
+        @keyframes p-red { 0% { box-shadow: 0 0 0 0px rgba(211,47,47,0.4); } 70% { box-shadow: 0 0 0 10px rgba(211,47,47,0); } }
+        @keyframes p-orange { 0% { box-shadow: 0 0 0 0px rgba(239,108,0,0.4); } 70% { box-shadow: 0 0 0 10px rgba(239,108,0,0); } }
         #sosAlertBox { padding: 12px; border-radius: 8px; text-align: center; margin-bottom: 15px; font-weight: bold; }
     </style>
 </head>
 <body>
 
 <div class="card" id="mainCard">
-    <div class="header-logo"><h2>SMART GUARD</h2><p>Hệ thống giám sát balo</p></div>
+    <div class="header-logo"><h2>SMART GUARD</h2><p>Giám sát balo thông minh</p></div>
 
     <div id="loginSection">
-        <input type="text" id="regId" placeholder="ID Thiết Bị">
-        <input type="password" id="regPass" placeholder="Mật khẩu">
-        <button class="btn btn-red" onclick="accessBalo()">VÀO HỆ THỐNG</button>
+        <label>ID THIẾT BỊ</label><input type="text" id="regId" placeholder="Nhập ID">
+        <label>MẬT KHẨU</label><input type="password" id="regPass" placeholder="••••••••">
+        <button class="btn btn-red" style="margin-top:20px;" onclick="accessBalo()">VÀO HỆ THỐNG</button>
     </div>
 
     <div id="infoSection" class="hidden">
         <div id="sosAlertBox" class="hidden"></div>
         <div class="info-box">
-            <label>Tên của trẻ</label><input type="text" id="regName">
-            <label>Gmail phụ huynh</label><input type="email" id="regEmail" readonly>
+            <label style="margin:0">Tên của trẻ</label><input type="text" id="regName">
+            <label>Gmail phụ huynh</label><input type="email" id="regEmail" readonly style="background:#f1f1f1">
         </div>
-        <button class="btn btn-red" onclick="handleUpdate()">CẬP NHẬT</button>
-        <a id="mapLink" href="#" target="_blank" class="btn btn-blue">XEM VỊ TRÍ</a>
+        <div class="btn-group">
+            <button class="btn btn-red" onclick="handleUpdate()">CẬP NHẬT THÔNG TIN</button>
+            <a id="mapLink" href="#" target="_blank" class="btn btn-blue">XEM VỊ TRÍ HIỆN TẠI</a>
+        </div>
     </div>
 </div>
 
@@ -55,7 +69,7 @@
     const firebaseConfig = { databaseURL: "https://smartguard-25e26-default-rtdb.asia-southeast1.firebasedatabase.app/" };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
-    let lastSosValue = 0;
+    let lastSos = 0;
 
     function accessBalo() {
         const id = document.getElementById('regId').value.trim();
@@ -63,34 +77,32 @@
         db.ref('SmartGuard/' + id).once('value', (snap) => {
             const data = snap.val();
             if(data && data.password === pass) { 
-                showInfo(data); 
-                startSOSListener(id);
+                showInfo(data); startSOSListener(id);
             } else { alert("Sai ID hoặc mật khẩu!"); }
         });
     }
 
     function startSOSListener(id) {
         db.ref('SmartGuard/' + id + '/sos').on('value', (snap) => {
-            const currentSos = Number(snap.val() || 0);
+            const val = Number(snap.val() || 0);
             const card = document.getElementById('mainCard');
-            const alertBox = document.getElementById('sosAlertBox');
-
+            const box = document.getElementById('sosAlertBox');
             card.classList.remove('sos-1', 'sos-2');
-            if (currentSos !== 0) {
-                alertBox.classList.remove('hidden');
-                if (currentSos === 1) {
-                    alertBox.innerHTML = "⚠️ NGOÀI VÙNG AN TOÀN";
-                    alertBox.style.background = "#fff3e0"; alertBox.style.color = "#ef6c00";
+            if(val !== 0) {
+                box.classList.remove('hidden');
+                if(val === 1) {
+                    box.innerHTML = "⚠️ RA KHỎI VÙNG AN TOÀN";
+                    box.style.cssText = "background:#fff3e0; color:#ef6c00";
                     card.classList.add('sos-1');
-                    if (lastSosValue === 0) alert("Cảnh báo: Trẻ rời vùng an toàn!");
-                } else if (currentSos === 2) {
-                    alertBox.innerHTML = "🚨 KHẨN CẤP: NHẤN NÚT SOS";
-                    alertBox.style.background = "#ffebee"; alertBox.style.color = "#c62828";
+                    if(lastSos === 0) alert("Cảnh báo: Trẻ rời vùng an toàn!");
+                } else if(val === 2) {
+                    box.innerHTML = "🚨 KHẨN CẤP: NHẤN NÚT SOS";
+                    box.style.cssText = "background:#ffebee; color:#c62828";
                     card.classList.add('sos-2');
-                    if (lastSosValue === 0) alert("Nguy hiểm: Trẻ nhấn nút SOS trên balo!");
+                    if(lastSos === 0) alert("Nguy hiểm: Trẻ nhấn nút khẩn cấp!");
                 }
-            } else { alertBox.classList.add('hidden'); }
-            lastSosValue = currentSos;
+            } else { box.classList.add('hidden'); }
+            lastSos = val;
         });
     }
 
@@ -99,9 +111,7 @@
         document.getElementById('infoSection').classList.remove('hidden');
         document.getElementById('regName').value = data.child_name || "";
         document.getElementById('regEmail').value = data.parent_email || "";
-        if (data.vi_do) {
-            document.getElementById('mapLink').href = `https://www.google.com/maps?q=${data.vi_do},${data.kinh_do}`;
-        }
+        if(data.vi_do) document.getElementById('mapLink').href = `https://www.google.com/maps?q=${data.vi_do},${data.kinh_do}`;
     }
 
     function handleUpdate() {
