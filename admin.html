@@ -2,6 +2,7 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Smart Guard - Admin Control</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
@@ -11,22 +12,23 @@
         h2 { text-transform: uppercase; letter-spacing: 2px; border-bottom: 2px solid var(--primary); padding-bottom: 10px; display: inline-block; }
         
         .stats-bar { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 25px 0; }
-        .stat-item { background: #334155; padding: 15px; border-radius: 12px; text-align: center; }
-        .stat-item span { font-size: 24px; font-weight: bold; color: #38bdf8; }
+        .stat-item { background: #334155; padding: 15px; border-radius: 12px; text-align: center; border: 1px solid #475569; }
+        .stat-item b { font-size: 24px; color: #38bdf8; display: block; margin-top: 5px; }
 
         table { width: 100%; border-collapse: separate; border-spacing: 0; margin-top: 10px; border-radius: 12px; overflow: hidden; background: #fff; color: #1e293b; }
         th { background: var(--primary); color: white; padding: 15px; text-transform: uppercase; font-size: 13px; }
         td { padding: 15px; border-bottom: 1px solid #e2e8f0; font-size: 14px; text-align: center; }
         
-        .sos-row { background: #fee2e2 !important; color: #991b1b; animation: pulse 2s infinite; }
-        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.7; } 100% { opacity: 1; } }
+        /* Hiệu ứng nháy đỏ khi có SOS */
+        .sos-row { background: #fee2e2 !important; color: #991b1b; font-weight: bold; animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0% { background: #fee2e2; } 50% { background: #fecaca; } 100% { background: #fee2e2; } }
         
         .btn-del { background: #ef4444; color: white; border: none; padding: 8px 15px; cursor: pointer; border-radius: 8px; font-weight: 600; transition: 0.3s; }
-        .btn-del:hover { background: #b91c1c; }
+        .btn-del:hover { background: #b91c1c; transform: scale(1.05); }
         
         #auth { text-align: center; padding: 50px 0; }
-        input { padding: 12px; border-radius: 8px; border: 1px solid #334155; background: #0f172a; color: white; width: 250px; outline: none; }
-        .btn-login { padding: 12px 25px; background: var(--primary); border: none; color: white; border-radius: 8px; cursor: pointer; font-weight: bold; }
+        input { padding: 12px; border-radius: 8px; border: 1px solid #334155; background: #0f172a; color: white; width: 250px; outline: none; text-align: center; }
+        .btn-login { padding: 12px 25px; background: var(--primary); border: none; color: white; border-radius: 8px; cursor: pointer; font-weight: bold; margin-left: 10px; }
     </style>
 </head>
 <body>
@@ -35,14 +37,14 @@
     <div style="text-align: center;"><h2>QUẢN TRỊ HỆ THỐNG</h2></div>
 
     <div id="auth">
-        <input type="password" id="pass" placeholder="Nhập mã bảo mật Admin">
+        <input type="password" id="pass" placeholder="Mã bảo mật Admin">
         <button class="btn-login" onclick="login()">XÁC THỰC</button>
     </div>
 
     <div id="dash" style="display:none">
         <div class="stats-bar">
-            <div class="stat-item">TỔNG THIẾT BỊ: <span id="tDev">0</span></div>
-            <div class="stat-item">ĐANG SOS: <span id="tSos" style="color:#ef4444">0</span></div>
+            <div class="stat-item">TỔNG THIẾT BỊ <b id="tDev">0</b></div>
+            <div class="stat-item">ĐANG SOS <b id="tSos" style="color:#ff4d4d">0</b></div>
         </div>
 
         <table>
@@ -55,7 +57,8 @@
                     <th>Thao Tác</th>
                 </tr>
             </thead>
-            <tbody id="list"></tbody>
+            <tbody id="list">
+                </tbody>
         </table>
     </div>
 </div>
@@ -64,47 +67,64 @@
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
 
 <script>
+    // Cấu hình Firebase của ông
     const firebaseConfig = { databaseURL: "https://smartguard-25e26-default-rtdb.asia-southeast1.firebasedatabase.app/" };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
     function login() {
+        // Mã admin mặc định là 123 (Ông có thể đổi)
         if(document.getElementById('pass').value === "123") {
             document.getElementById('auth').style.display='none';
             document.getElementById('dash').style.display='block';
-            
-            db.ref('SmartGuard').on('value', (snap) => {
-                const list = document.getElementById('list');
-                let count = 0, sos = 0; 
-                list.innerHTML = "";
-                
-                snap.forEach(c => {
-                    count++; 
-                    const d = c.val(); 
-                    const isSos = d.sos !== 0; 
-                    if(isSos) sos++;
-                    
-                    // LƯU Ý: Phải gọi đúng d.password khớp với Firebase
-                    list.innerHTML += `
-                        <tr class="${isSos ? 'sos-row' : ''}">
-                            <td><b>#${c.key}</b></td>
-                            <td>${d.child_name || 'Chưa đặt tên'}</td>
-                            <td><code>${d.password || '---'}</code></td>
-                            <td>${isSos ? '🚨 CẢNH BÁO SOS' : '✅ Bình thường'}</td>
-                            <td><button class="btn-del" onclick="del('${c.key}')">XÓA</button></td>
-                        </tr>`;
-                });
-                document.getElementById('tDev').innerText = count; 
-                document.getElementById('tSos').innerText = sos;
-            });
+            loadData();
         } else {
             alert("Sai mã Admin!");
         }
     }
 
+    function loadData() {
+        // Lắng nghe realtime từ nhánh SmartGuard
+        db.ref('SmartGuard').on('value', (snap) => {
+            const listBody = document.getElementById('list');
+            let count = 0, sosCount = 0; 
+            listBody.innerHTML = "";
+            
+            snap.forEach(child => {
+                count++; 
+                const data = child.val(); 
+                
+                // Ép kiểu sos về Number để so sánh chính xác (tránh lỗi string/number trên FB)
+                const currentSos = Number(data.sos || 0);
+                const isSos = currentSos !== 0; 
+                
+                if(isSos) sosCount++;
+                
+                listBody.innerHTML += `
+                    <tr class="${isSos ? 'sos-row' : ''}">
+                        <td><b>#${child.key}</b></td>
+                        <td>${data.child_name || 'Chưa đặt tên'}</td>
+                        <td><code>${data.password || '---'}</code></td>
+                        <td>
+                            ${isSos ? 
+                                '<span style="color:#cc0000">🚨 ĐANG SOS</span>' : 
+                                '<span style="color:#16a34a">✅ Bình thường</span>'}
+                        </td>
+                        <td><button class="btn-del" onclick="del('${child.key}')">XÓA</button></td>
+                    </tr>`;
+            });
+
+            // Cập nhật số liệu thống kê lên đầu trang
+            document.getElementById('tDev').innerText = count; 
+            document.getElementById('tSos').innerText = sosCount;
+        });
+    }
+
     function del(id) { 
         if(confirm("Xác nhận xóa thiết bị " + id + " khỏi hệ thống?")) {
-            db.ref('SmartGuard/' + id).remove(); 
+            db.ref('SmartGuard/' + id).remove()
+              .then(() => alert("Đã xóa thiết bị!"))
+              .catch((err) => alert("Lỗi: " + err));
         }
     }
 </script>
