@@ -15,7 +15,6 @@
         label { font-weight: 600; display: block; margin-top: 15px; font-size: 14px; color: #555; }
         input { width: 100%; padding: 14px; margin-top: 8px; border: 2px solid #edf2f7; border-radius: 12px; box-sizing: border-box; font-size: 16px; }
 
-        /* --- FIX NÚT BẰNG NHAU --- */
         .btn-group { display: flex; flex-direction: column; gap: 12px; margin-top: 20px; }
         .btn { 
             width: 100%; padding: 16px 0; border: none; border-radius: 12px; 
@@ -28,10 +27,10 @@
         .btn-blue { background: linear-gradient(135deg, #42a5f5, #1a73e8); }
         .btn:hover { transform: translateY(-2px); filter: brightness(1.1); }
 
+        .forgot-link { display: block; text-align: center; margin-top: 15px; color: var(--blue); text-decoration: none; font-size: 14px; font-weight: 600; cursor: pointer; }
         .hidden { display: none; }
         .info-box { background: #f8fafc; padding: 15px; border-radius: 12px; border: 1px dashed #cbd5e0; margin-bottom: 10px; }
         
-        /* Hiệu ứng SOS */
         .sos-1 { border: 3px solid var(--orange); animation: p-orange 1s infinite; }
         .sos-2 { border: 3px solid var(--red); animation: p-red 1s infinite; }
         @keyframes p-red { 0% { box-shadow: 0 0 0 0px rgba(211,47,47,0.4); } 70% { box-shadow: 0 0 0 10px rgba(211,47,47,0); } }
@@ -48,6 +47,13 @@
         <label>ID THIẾT BỊ</label><input type="text" id="regId" placeholder="Nhập ID">
         <label>MẬT KHẨU</label><input type="password" id="regPass" placeholder="••••••••">
         <button class="btn btn-red" style="margin-top:20px;" onclick="accessBalo()">VÀO HỆ THỐNG</button>
+        <span class="forgot-link" onclick="startForgotPass()">Quên mật khẩu?</span>
+    </div>
+
+    <div id="otpSection" class="hidden">
+        <div class="info-box"><p style="text-align:center; color:var(--blue); margin:0;">Mã OTP đã gửi đến Gmail của bạn</p></div>
+        <input type="text" id="otpInput" placeholder="Nhập 6 số OTP" maxlength="6" style="text-align:center; letter-spacing:5px;">
+        <button class="btn btn-blue" style="margin-top:15px;" onclick="verifyOTP()">XÁC NHẬN OTP</button>
     </div>
 
     <div id="infoSection" class="hidden">
@@ -55,6 +61,7 @@
         <div class="info-box">
             <label style="margin:0">Tên của trẻ</label><input type="text" id="regName">
             <label>Gmail phụ huynh</label><input type="email" id="regEmail" readonly style="background:#f1f1f1">
+            <label>Mật khẩu mới</label><input type="password" id="newPass" placeholder="Nhập nếu muốn đổi">
         </div>
         <div class="btn-group">
             <button class="btn btn-red" onclick="handleUpdate()">CẬP NHẬT THÔNG TIN</button>
@@ -69,17 +76,52 @@
     const firebaseConfig = { databaseURL: "https://smartguard-25e26-default-rtdb.asia-southeast1.firebasedatabase.app/" };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
-    let lastSos = 0;
+    let lastSos = 0, currentOTP = "", savedData = null;
 
     function accessBalo() {
         const id = document.getElementById('regId').value.trim();
         const pass = document.getElementById('regPass').value;
+        if(!id) return alert("Vui lòng nhập ID!");
+        
         db.ref('SmartGuard/' + id).once('value', (snap) => {
             const data = snap.val();
             if(data && data.password === pass) { 
+                savedData = data;
                 showInfo(data); startSOSListener(id);
             } else { alert("Sai ID hoặc mật khẩu!"); }
         });
+    }
+
+    // --- LOGIC QUÊN MẬT KHẨU ---
+    function startForgotPass() {
+        const id = document.getElementById('regId').value.trim();
+        if(!id) return alert("Vui lòng nhập ID thiết bị trước!");
+
+        db.ref('SmartGuard/' + id).once('value', (snap) => {
+            const data = snap.val();
+            if(data && data.parent_email) {
+                savedData = data;
+                currentOTP = Math.floor(100000 + Math.random() * 900000).toString();
+                // Gửi yêu cầu OTP lên Firebase để Script Gmail xử lý
+                db.ref('OTP_Requests').set({
+                    to_email: data.parent_email,
+                    otp_code: currentOTP,
+                    timestamp: Date.now()
+                }).then(() => {
+                    document.getElementById('loginSection').classList.add('hidden');
+                    document.getElementById('otpSection').classList.remove('hidden');
+                });
+            } else { alert("ID không tồn tại hoặc chưa đăng ký Email!"); }
+        });
+    }
+
+    function verifyOTP() {
+        const input = document.getElementById('otpInput').value;
+        if(input === currentOTP) {
+            document.getElementById('otpSection').classList.add('hidden');
+            showInfo(savedData);
+            startSOSListener(document.getElementById('regId').value.trim());
+        } else { alert("Mã OTP không chính xác!"); }
     }
 
     function startSOSListener(id) {
@@ -116,7 +158,14 @@
 
     function handleUpdate() {
         const id = document.getElementById('regId').value.trim();
-        db.ref('SmartGuard/' + id).update({ child_name: document.getElementById('regName').value }).then(() => alert("Đã cập nhật!"));
+        const newP = document.getElementById('newPass').value;
+        let updateData = { child_name: document.getElementById('regName').value };
+        if(newP) updateData.password = newP;
+
+        db.ref('SmartGuard/' + id).update(updateData).then(() => {
+            alert("Đã cập nhật thông tin thành công!");
+            if(newP) location.reload(); // Load lại nếu đổi pass
+        });
     }
 </script>
 </body>
