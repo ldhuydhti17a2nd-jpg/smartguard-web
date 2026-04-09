@@ -2,57 +2,111 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <title>Smart Guard - Admin Dashboard</title>
+    <title>Smart Guard - Admin Control</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
-        body { font-family: sans-serif; background: #1a1a2e; color: #fff; padding: 20px; }
-        .admin-card { background: #16213e; padding: 20px; border-radius: 10px; max-width: 900px; margin: auto; }
-        table { width: 100%; background: #fff; color: #333; border-collapse: collapse; margin-top: 20px; }
-        th, td { padding: 12px; border: 1px solid #ddd; text-align: left; }
-        th { background: #cc0000; color: #fff; }
-        .sos-row { background: #ffcccc; color: #cc0000; font-weight: bold; }
-        .btn-del { background: #cc0000; color: #fff; border: none; padding: 5px 10px; cursor: pointer; border-radius: 3px; }
+        :root { --primary: #cc0000; --bg: #0f172a; --card: #1e293b; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: #f8fafc; margin: 0; padding: 20px; }
+        .admin-card { background: var(--card); padding: 30px; border-radius: 16px; max-width: 1000px; margin: auto; box-shadow: 0 10px 25px rgba(0,0,0,0.3); }
+        h2 { text-transform: uppercase; letter-spacing: 2px; border-bottom: 2px solid var(--primary); padding-bottom: 10px; display: inline-block; }
+        
+        .stats-bar { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 25px 0; }
+        .stat-item { background: #334155; padding: 15px; border-radius: 12px; text-align: center; }
+        .stat-item span { font-size: 24px; font-weight: bold; color: #38bdf8; }
+
+        table { width: 100%; border-collapse: separate; border-spacing: 0; margin-top: 10px; border-radius: 12px; overflow: hidden; background: #fff; color: #1e293b; }
+        th { background: var(--primary); color: white; padding: 15px; text-transform: uppercase; font-size: 13px; }
+        td { padding: 15px; border-bottom: 1px solid #e2e8f0; font-size: 14px; text-align: center; }
+        
+        .sos-row { background: #fee2e2 !important; color: #991b1b; animation: pulse 2s infinite; }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.7; } 100% { opacity: 1; } }
+        
+        .btn-del { background: #ef4444; color: white; border: none; padding: 8px 15px; cursor: pointer; border-radius: 8px; font-weight: 600; transition: 0.3s; }
+        .btn-del:hover { background: #b91c1c; }
+        
+        #auth { text-align: center; padding: 50px 0; }
+        input { padding: 12px; border-radius: 8px; border: 1px solid #334155; background: #0f172a; color: white; width: 250px; outline: none; }
+        .btn-login { padding: 12px 25px; background: var(--primary); border: none; color: white; border-radius: 8px; cursor: pointer; font-weight: bold; }
     </style>
 </head>
 <body>
+
 <div class="admin-card">
-    <h2 style="text-align:center">QUAN TRI HE THONG</h2>
+    <div style="text-align: center;"><h2>QUẢN TRỊ HỆ THỐNG</h2></div>
+
     <div id="auth">
-        <input type="password" id="pass" placeholder="Mật mã Admin" style="padding:10px; width:200px">
-        <button onclick="login()" style="padding:10px">DANG NHAP</button>
+        <input type="password" id="pass" placeholder="Nhập mã bảo mật Admin">
+        <button class="btn-login" onclick="login()">XÁC THỰC</button>
     </div>
+
     <div id="dash" style="display:none">
-        <div style="background:#0f3460; padding:10px; margin-bottom:10px">TONG THIET BI: <span id="tDev">0</span> | DANG SOS: <span id="tSos">0</span></div>
+        <div class="stats-bar">
+            <div class="stat-item">TỔNG THIẾT BỊ: <span id="tDev">0</span></div>
+            <div class="stat-item">ĐANG SOS: <span id="tSos" style="color:#ef4444">0</span></div>
+        </div>
+
         <table>
-            <thead><tr><th>ID</th><th>TEN BE</th><th>PASS</th><th>TRANG THAI</th><th>THAO TAC</th></tr></thead>
+            <thead>
+                <tr>
+                    <th>ID Thiết Bị</th>
+                    <th>Tên Trẻ Em</th>
+                    <th>Mật Khẩu</th>
+                    <th>Trạng Thái</th>
+                    <th>Thao Tác</th>
+                </tr>
+            </thead>
             <tbody id="list"></tbody>
         </table>
     </div>
 </div>
+
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+
 <script>
     const firebaseConfig = { databaseURL: "https://smartguard-25e26-default-rtdb.asia-southeast1.firebasedatabase.app/" };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
+
     function login() {
         if(document.getElementById('pass').value === "123") {
             document.getElementById('auth').style.display='none';
             document.getElementById('dash').style.display='block';
+            
             db.ref('SmartGuard').on('value', (snap) => {
                 const list = document.getElementById('list');
-                let count = 0, sos = 0; list.innerHTML = "";
+                let count = 0, sos = 0; 
+                list.innerHTML = "";
+                
                 snap.forEach(c => {
-                    count++; const d = c.val(); const isSos = d.sos !== 0; if(isSos) sos++;
-                    list.innerHTML += `<tr class="${isSos ? 'sos-row' : ''}">
-                        <td>${c.key}</td><td>${d.child_name}</td><td>${d.password}</td>
-                        <td>${isSos ? 'CANH BAO SOS' : 'BINH THUONG'}</td>
-                        <td><button class="btn-del" onclick="del('${c.key}')">XOA</button></td></tr>`;
+                    count++; 
+                    const d = c.val(); 
+                    const isSos = d.sos !== 0; 
+                    if(isSos) sos++;
+                    
+                    // LƯU Ý: Phải gọi đúng d.password khớp với Firebase
+                    list.innerHTML += `
+                        <tr class="${isSos ? 'sos-row' : ''}">
+                            <td><b>#${c.key}</b></td>
+                            <td>${d.child_name || 'Chưa đặt tên'}</td>
+                            <td><code>${d.password || '---'}</code></td>
+                            <td>${isSos ? '🚨 CẢNH BÁO SOS' : '✅ Bình thường'}</td>
+                            <td><button class="btn-del" onclick="del('${c.key}')">XÓA</button></td>
+                        </tr>`;
                 });
-                document.getElementById('tDev').innerText = count; document.getElementById('tSos').innerText = sos;
+                document.getElementById('tDev').innerText = count; 
+                document.getElementById('tSos').innerText = sos;
             });
+        } else {
+            alert("Sai mã Admin!");
         }
     }
-    function del(id) { if(confirm("Xoa "+id+"?")) db.ref('SmartGuard/'+id).remove(); }
+
+    function del(id) { 
+        if(confirm("Xác nhận xóa thiết bị " + id + " khỏi hệ thống?")) {
+            db.ref('SmartGuard/' + id).remove(); 
+        }
+    }
 </script>
 </body>
 </html>

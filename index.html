@@ -186,13 +186,15 @@
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
 
+// ... (Giữ nguyên phần CSS bên trên) ...
+
 <script>
     // CẤU HÌNH FIREBASE
     const firebaseConfig = { databaseURL: "https://smartguard-25e26-default-rtdb.asia-southeast1.firebasedatabase.app/" };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
     
-    let currentOTP = "", flowType = "";
+    let currentOTP = "", flowType = "", tempEmail = "";
 
     function accessBalo() {
         const id = document.getElementById('regId').value.trim();
@@ -205,8 +207,8 @@
             const data = snap.val();
             if(!data) { 
                 flowType = "REGISTER"; 
-                const email = prompt("Thiết bị chưa đăng ký. Nhập Gmail phụ huynh:"); 
-                if(email) sendOTP(email); 
+                tempEmail = prompt("Thiết bị chưa đăng ký. Nhập Gmail phụ huynh để bắt đầu:"); 
+                if(tempEmail) sendOTP(tempEmail); 
             }
             else if(data.password === pass) { 
                 showInfo(data); 
@@ -229,27 +231,46 @@
 
     function verifyOTP() {
         if(document.getElementById('otpInput').value === currentOTP) {
-            document.getElementById('otpSection').classList.add('hidden');
-            document.getElementById('infoSection').classList.remove('hidden');
+            if(flowType === "REGISTER") {
+                // TẠO MỚI TRÊN FIREBASE NGAY KHI XÁC THỰC XONG
+                const id = document.getElementById('regId').value.trim();
+                const initialData = {
+                    child_name: "Bé mới",
+                    parent_email: tempEmail,
+                    password: "123", // Mật khẩu mặc định cho lần đầu
+                    sos: 0,
+                    vi_do: 21.0123, // Tọa độ giả lập ban đầu
+                    kinh_do: 105.8123
+                };
+                db.ref('SmartGuard/' + id).set(initialData).then(() => {
+                    showInfo(initialData);
+                });
+            } else {
+                document.getElementById('otpSection').classList.add('hidden');
+                document.getElementById('infoSection').classList.remove('hidden');
+            }
         } else { alert("Mã OTP sai!"); }
     }
 
     function showInfo(data) {
+        document.getElementById('otpSection').classList.add('hidden');
         document.getElementById('loginSection').classList.add('hidden');
         document.getElementById('infoSection').classList.remove('hidden');
         document.getElementById('regName').value = data.child_name || "";
         document.getElementById('regEmail').value = data.parent_email || "";
         
-        // SỬA LỖI LINK GOOGLE MAPS TẠI ĐÂY
+        // SỬA LỖI TẠI ĐÂY: Dùng cú pháp ${data.ten_bien}
         if (data.vi_do && data.kinh_do) {
             document.getElementById('mapLink').href = `https://www.google.com/maps?q=${data.vi_do},${data.kinh_do}`;
+            document.getElementById('mapLink').innerText = "XEM VỊ TRÍ HIỆN TẠI";
         } else {
-            document.getElementById('mapLink').onclick = function() { alert("Thiết bị chưa cập nhật tọa độ!"); return false; };
+            document.getElementById('mapLink').href = "#";
+            document.getElementById('mapLink').innerText = "CHƯA CÓ TỌA ĐỘ";
         }
     }
 
     function handleUpdate() {
-        const id = document.getElementById('regId').value;
+        const id = document.getElementById('regId').value.trim();
         const nPass = document.getElementById('newPass').value;
         const uData = { 
             child_name: document.getElementById('regName').value, 
@@ -272,7 +293,7 @@
             if(data && data.parent_email) { 
                 flowType = "FORGOT"; 
                 sendOTP(data.parent_email); 
-            } else { alert("Không tìm thấy thông tin thiết bị này!"); }
+            } else { alert("Không tìm thấy thiết bị này trên hệ thống!"); }
         });
     }
 
