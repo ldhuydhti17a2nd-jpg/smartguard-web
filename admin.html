@@ -57,8 +57,7 @@
                     <th>Thao Tác</th>
                 </tr>
             </thead>
-            <tbody id="list">
-                </tbody>
+            <tbody id="list"></tbody>
         </table>
     </div>
 </div>
@@ -67,13 +66,13 @@
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
 
 <script>
-    // Cấu hình Firebase của ông
     const firebaseConfig = { databaseURL: "https://smartguard-25e26-default-rtdb.asia-southeast1.firebasedatabase.app/" };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
+    let lastSosState = {}; // Ghi nhớ trạng thái trước đó
+
     function login() {
-        // Mã admin mặc định là 123 (Ông có thể đổi)
         if(document.getElementById('pass').value === "123") {
             document.getElementById('auth').style.display='none';
             document.getElementById('dash').style.display='block';
@@ -84,7 +83,6 @@
     }
 
     function loadData() {
-        // Lắng nghe realtime từ nhánh SmartGuard
         db.ref('SmartGuard').on('value', (snap) => {
             const listBody = document.getElementById('list');
             let count = 0, sosCount = 0; 
@@ -93,16 +91,24 @@
             snap.forEach(child => {
                 count++; 
                 const data = child.val(); 
+                const deviceId = child.key;
+                const currentSos = Number(data.sos || 0); // Đảm bảo kiểu số
                 
-                // Ép kiểu sos về Number để so sánh chính xác (tránh lỗi string/number trên FB)
-                const currentSos = Number(data.sos || 0);
+                // NẾU PHÁT HIỆN SOS (Kể cả khi nó biến mất nhanh)
+                if (currentSos !== 0 && (!lastSosState[deviceId] || lastSosState[deviceId] === 0)) {
+                    // Hiện alert ngay để "giữ chân" người dùng nhìn thấy
+                    alert(`🚨 CẢNH BÁO: Thiết bị #${deviceId} (${data.child_name || 'Nam'}) đang gửi tín hiệu SOS!`);
+                }
+                
+                // Cập nhật bộ nhớ trạng thái
+                lastSosState[deviceId] = currentSos;
+
                 const isSos = currentSos !== 0; 
-                
                 if(isSos) sosCount++;
                 
                 listBody.innerHTML += `
                     <tr class="${isSos ? 'sos-row' : ''}">
-                        <td><b>#${child.key}</b></td>
+                        <td><b>#${deviceId}</b></td>
                         <td>${data.child_name || 'Chưa đặt tên'}</td>
                         <td><code>${data.password || '---'}</code></td>
                         <td>
@@ -110,11 +116,10 @@
                                 '<span style="color:#cc0000">🚨 ĐANG SOS</span>' : 
                                 '<span style="color:#16a34a">✅ Bình thường</span>'}
                         </td>
-                        <td><button class="btn-del" onclick="del('${child.key}')">XÓA</button></td>
+                        <td><button class="btn-del" onclick="del('${deviceId}')">XÓA</button></td>
                     </tr>`;
             });
 
-            // Cập nhật số liệu thống kê lên đầu trang
             document.getElementById('tDev').innerText = count; 
             document.getElementById('tSos').innerText = sosCount;
         });
@@ -122,9 +127,7 @@
 
     function del(id) { 
         if(confirm("Xác nhận xóa thiết bị " + id + " khỏi hệ thống?")) {
-            db.ref('SmartGuard/' + id).remove()
-              .then(() => alert("Đã xóa thiết bị!"))
-              .catch((err) => alert("Lỗi: " + err));
+            db.ref('SmartGuard/' + id).remove(); 
         }
     }
 </script>
