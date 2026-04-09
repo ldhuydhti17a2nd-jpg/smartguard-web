@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Guard - User</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #f0f2f5; padding: 20px; }
+        .card { background: #fff; padding: 25px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); max-width: 400px; margin: auto; }
+        h2 { color: #cc0000; text-align: center; }
+        label { font-weight: bold; display: block; margin-top: 15px; }
+        input { width: 100%; padding: 12px; margin-top: 5px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
+        .btn { width: 100%; padding: 15px; margin-top: 15px; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; color: #fff; }
+        .btn-red { background: #cc0000; }
+        .btn-blue { background: #0052cc; }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+<div class="card">
+    <h2>SMART GUARD SYSTEM</h2>
+    <div id="loginSection">
+        <label>ID THIET BI</label>
+        <input type="text" id="regId" placeholder="Vi du: Balo_01">
+        <label>MAT KHAU</label>
+        <input type="password" id="regPass" placeholder="Nhap mat khau">
+        <button class="btn btn-red" onclick="accessBalo()">DANG NHAP / DANG KY</button>
+        <button onclick="startForgotPass()" style="background:none; border:none; color:#0052cc; cursor:pointer; width:100%; margin-top:10px; text-decoration:underline;">Quen mat khau?</button>
+    </div>
+    <div id="otpSection" class="hidden">
+        <p style="color: blue; text-align: center;">MA OTP DA DUOC GUI DEN GMAIL</p>
+        <input type="text" id="otpInput" placeholder="Nhap 6 so OTP">
+        <button class="btn btn-blue" onclick="verifyOTP()">XAC NHAN</button>
+    </div>
+    <div id="infoSection" class="hidden">
+        <label>TEN CUA TRE</label>
+        <input type="text" id="regName">
+        <label>GMAIL PHU HUYNH</label>
+        <input type="email" id="regEmail">
+        <label>MAT KHAU MOI</label>
+        <input type="password" id="newPass" placeholder="Bo trong neu khong doi">
+        <button class="btn btn-red" onclick="handleUpdate()">LUU THONG TIN</button>
+        <a id="mapLink" href="#" target="_blank" class="btn btn-blue" style="text-decoration:none; text-align:center; display:block;">XEM VI TRI</a>
+    </div>
+</div>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+<script>
+    const firebaseConfig = { databaseURL: "https://smartguard-25e26-default-rtdb.asia-southeast1.firebasedatabase.app/" };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+    let currentOTP = "", flowType = "";
+    function accessBalo() {
+        const id = document.getElementById('regId').value.trim();
+        const pass = document.getElementById('regPass').value;
+        if(!id) return alert("Vui long nhap ID");
+        db.ref('SmartGuard/' + id).once('value', (snap) => {
+            const data = snap.val();
+            if(!data) { flowType = "REGISTER"; const email = prompt("Nhap Gmail dang ky:"); if(email) sendOTP(email); }
+            else if(data.password === pass) { showInfo(data); }
+            else { alert("Sai mat khau"); }
+        });
+    }
+    function startForgotPass() {
+        const id = document.getElementById('regId').value.trim();
+        db.ref('SmartGuard/' + id).once('value', (snap) => {
+            const data = snap.val();
+            if(data && data.parent_email) { flowType = "FORGOT"; sendOTP(data.parent_email); }
+            else { alert("Khong tim thay Gmail!"); }
+        });
+    }
+    function sendOTP(email) {
+        currentOTP = Math.floor(100000 + Math.random() * 900000).toString();
+        db.ref('OTP_Requests').set({ to_email: email, otp_code: currentOTP, subject: flowType === "REGISTER" ? "XAC THUC DANG KY" : "KHOI PHUC MAT KHAU" });
+        document.getElementById('loginSection').classList.add('hidden');
+        document.getElementById('otpSection').classList.remove('hidden');
+    }
+    function verifyOTP() {
+        if(document.getElementById('otpInput').value === currentOTP) {
+            document.getElementById('otpSection').classList.add('hidden');
+            document.getElementById('infoSection').classList.remove('hidden');
+        } else { alert("OTP sai!"); }
+    }
+    function showInfo(data) {
+        document.getElementById('loginSection').classList.add('hidden');
+        document.getElementById('infoSection').classList.remove('hidden');
+        document.getElementById('regName').value = data.child_name || "";
+        document.getElementById('regEmail').value = data.parent_email || "";
+        document.getElementById('mapLink').href = `https://www.google.com/maps?q=${data.vi_do},${data.kinh_do}`;
+    }
+    function handleUpdate() {
+        const id = document.getElementById('regId').value;
+        const nPass = document.getElementById('newPass').value;
+        const uData = { child_name: document.getElementById('regName').value, parent_email: document.getElementById('regEmail').value, sos: 0 };
+        if(nPass) uData.password = nPass;
+        db.ref('SmartGuard/' + id).update(uData).then(() => { alert("THANH CONG"); location.reload(); });
+    }
+</script>
+</body>
+</html>

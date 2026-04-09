@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Smart Guard - Admin Dashboard</title>
+    <style>
+        body { font-family: sans-serif; background: #1a1a2e; color: #fff; padding: 20px; }
+        .admin-card { background: #16213e; padding: 20px; border-radius: 10px; max-width: 900px; margin: auto; }
+        table { width: 100%; background: #fff; color: #333; border-collapse: collapse; margin-top: 20px; }
+        th, td { padding: 12px; border: 1px solid #ddd; text-align: left; }
+        th { background: #cc0000; color: #fff; }
+        .sos-row { background: #ffcccc; color: #cc0000; font-weight: bold; }
+        .btn-del { background: #cc0000; color: #fff; border: none; padding: 5px 10px; cursor: pointer; border-radius: 3px; }
+    </style>
+</head>
+<body>
+<div class="admin-card">
+    <h2 style="text-align:center">QUAN TRI HE THONG</h2>
+    <div id="auth">
+        <input type="password" id="pass" placeholder="Mật mã Admin" style="padding:10px; width:200px">
+        <button onclick="login()" style="padding:10px">DANG NHAP</button>
+    </div>
+    <div id="dash" style="display:none">
+        <div style="background:#0f3460; padding:10px; margin-bottom:10px">TONG THIET BI: <span id="tDev">0</span> | DANG SOS: <span id="tSos">0</span></div>
+        <table>
+            <thead><tr><th>ID</th><th>TEN BE</th><th>PASS</th><th>TRANG THAI</th><th>THAO TAC</th></tr></thead>
+            <tbody id="list"></tbody>
+        </table>
+    </div>
+</div>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+<script>
+    const firebaseConfig = { databaseURL: "https://smartguard-25e26-default-rtdb.asia-southeast1.firebasedatabase.app/" };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+    function login() {
+        if(document.getElementById('pass').value === "123") {
+            document.getElementById('auth').style.display='none';
+            document.getElementById('dash').style.display='block';
+            db.ref('SmartGuard').on('value', (snap) => {
+                const list = document.getElementById('list');
+                let count = 0, sos = 0; list.innerHTML = "";
+                snap.forEach(c => {
+                    count++; const d = c.val(); const isSos = d.sos !== 0; if(isSos) sos++;
+                    list.innerHTML += `<tr class="${isSos ? 'sos-row' : ''}">
+                        <td>${c.key}</td><td>${d.child_name}</td><td>${d.password}</td>
+                        <td>${isSos ? 'CANH BAO SOS' : 'BINH THUONG'}</td>
+                        <td><button class="btn-del" onclick="del('${c.key}')">XOA</button></td></tr>`;
+                });
+                document.getElementById('tDev').innerText = count; document.getElementById('tSos').innerText = sos;
+            });
+        }
+    }
+    function del(id) { if(confirm("Xoa "+id+"?")) db.ref('SmartGuard/'+id).remove(); }
+</script>
+</body>
+</html>
